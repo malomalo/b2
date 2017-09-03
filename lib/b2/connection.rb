@@ -1,7 +1,7 @@
 class B2
   class Connection
     
-    attr_reader :account_id, :application_key
+    attr_reader :account_id, :application_key, :download_url
     
     def initialize(account_id, application_key)
       @account_id = account_id
