@@ -17,7 +17,7 @@ class B2
   
   def buckets
     @connection.post('/b2api/v1/b2_list_buckets', {accountId: @account_id})['buckets'].map do |b|
-      B2::Bucket.new(b)
+      B2::Bucket.new(b, @connection)
     end
   end
 
@@ -27,13 +27,6 @@ class B2
     
     @buckets_cache = buckets
     @buckets_cache.find{ |b| b.name == name }&.id
-  end
-  
-  def exists?(bucket, key)
-    @connection.post('/b2api/v1/b2_list_file_names', {
-      bucketId: lookup_bucket_id(bucket),
-      startFileName: key
-    })['files'].size == 1
   end
   
   def file(bucket, key)

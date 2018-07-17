@@ -3,7 +3,7 @@ class B2
 
     attr_reader :id, :name, :account_id, :bucket_id, :size, :sha1, :mime_type, :uploaded_at, :metadata
     
-    def initialize(attrs)
+    def initialize(attrs, connection)
       @id = attrs['fileId']
       @name = B2::File.decode_filename(attrs['fileName'])
       @account_id = attrs['accountId']
@@ -13,6 +13,8 @@ class B2
       @mime_type = attrs['contentType']
       @uploaded_at = attrs['uploadTimestamp']
       @metadata = attrs['fileInfo']
+      
+      @connection = connection
     end
     
     def self.encode_filename(str)
@@ -21,6 +23,13 @@ class B2
     
     def self.decode_filename(str)
       URI.decode_www_form_component(str, Encoding::UTF_8)
+    end
+    
+    def delete!
+      @connection.post('/b2api/v1/b2_delete_file_version', {
+        fileId: @id,
+        fileName: @name
+      })
     end
 
   end
