@@ -17,7 +17,7 @@ class B2
       @connection.post("/b2api/v1/b2_get_upload_url", { bucketId: @id })
     end
     
-    def upload_file(key, io_or_string, mime_type: nil, sha1: nil, info: {})
+    def upload_file(key, io_or_string, mime_type: nil, sha1: nil, content_disposition: nil, info: {})
       upload = get_upload_token
   
       uri = URI.parse(upload['uploadUrl'])
@@ -30,6 +30,7 @@ class B2
       req['X-Bz-File-Name']     = B2::File.encode_filename(key)
       req['Content-Type']       = mime_type || 'b2/x-auto'
       req['X-Bz-Content-Sha1']  = sha1 ? sha1 : 'hex_digits_at_end'
+      req['X-Bz-Info-b2-content-disposition'] = content_disposition if content_disposition
       info.each do |key, value|
         req["X-Bz-Info-#{key}"] = value
       end

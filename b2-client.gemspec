@@ -1,7 +1,7 @@
 require File.expand_path("../lib/b2/version", __FILE__)
 
 Gem::Specification.new do |s|
-  s.name        = "b2"
+  s.name        = "b2-client"
   s.version     = B2::VERSION
   s.authors     = ["Jon Bracy"]
   s.email       = ["jonbracy@gmail.com"]

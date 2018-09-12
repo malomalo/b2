@@ -1,0 +1,1 @@
+require File.expand_path('../../b2', __FILE__)
