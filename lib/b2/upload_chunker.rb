@@ -6,10 +6,10 @@ class B2
       @data = data
       @sha_appended = false
       @digestor = Digest::SHA1.new
-      @size = if data.is_a?(::File)
-        data.size + 40
-      elsif data.is_a?(String)
+      @size = if data.is_a?(String)
         data.bytesize + 40
+      else
+        data.size + 40
       end
     end
 

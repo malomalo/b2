@@ -68,33 +68,7 @@ class B2
     end
     
     def download(key, to=nil, &block)
-      to = File.open(to, 'w') if to.is_a?(String)
-      data = ""
-      digestor = Digest::SHA1.new
-
-      uri = URI.parse(@connection.download_url)
-      conn = Net::HTTP.new(uri.host, uri.port)
-      conn.use_ssl = uri.scheme == 'https'
-    
-      conn.get("/file/#{@name}/#{key}") do |response|
-        
-        response.read_body do |chunk|
-          digestor << chunk
-          if to
-            to << chunk
-          elsif block
-            block(chunk)
-          else
-            data << chunk
-          end
-        end
-        
-        if digestor.hexdigest != resp['X-Bz-Content-Sha1']
-          raise 'file error'
-        end
-        
-      end
-      block.nil? && to.nil? ? data : nil
+      @connection.download(@name, key, to, &block)
     end
     
     def delete!(key)

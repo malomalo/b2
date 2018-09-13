@@ -94,21 +94,10 @@ class B2
     @connection.download_url + '/file/' + bucket + '/' + filename + "?Authorization=" + response['authorizationToken']
   end
   
-  def download(bucket, filename, &block)
-    digestor = Digest::SHA1.new
-    data = ""
-    
-    @connection.get("/file/#{bucket}/#{filename}") do |response|
-      response.read_body do |chunk|
-        digestor << chunk
-        block.nil? ? (data << chunk) : block(chunk)
-      end
-      if digestor.hexdigest != resp['X-Bz-Content-Sha1']
-        raise 'file error'
-      end
-    end
-    block.nil? ? data : nil
+  def download(bucket, key, to=nil, &block)
+    @connection.download(bucket, key, to, &block)
   end
+
   
   def download_to_file(bucket, key, filename)
     file = File.open(filename, 'w')

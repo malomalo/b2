@@ -83,6 +83,44 @@ class B2
       return_value
     end
     
+    def download(bucket, key, to=nil, &block)
+      to = ::File.open(to, 'wb') if to.is_a?(String)
+      digestor = Digest::SHA1.new
+      data = ""
+    
+      uri = URI.parse(@download_url)
+      conn = Net::HTTP.new(uri.host, uri.port)
+      conn.use_ssl = uri.scheme == 'https'
+
+      req = Net::HTTP::Get.new("/file/#{bucket}/#{key}")
+      req['Authorization'] = authorization_token
+      conn.start do |http|
+        http.request(req) do |response|
+          case response
+          when Net::HTTPSuccess
+            response.read_body do |chunk|
+              digestor << chunk
+              if to
+                to << chunk
+              elsif block
+                block(chunk)
+              else
+                data << chunk
+              end
+            end
+      
+            if digestor.hexdigest != response['X-Bz-Content-Sha1']
+              raise 'file error'
+            end
+          else
+            raise response.body
+          end
+        end
+      end
+    
+      block.nil? && to.nil? ? data : nil
+    end
+    
     def get(path, body=nil, &block)
       request = Net::HTTP::Get.new(path)
       
