@@ -1,3 +1,3 @@
-module B2
-  VERSION = '1.0.1'
+class B2
+  VERSION = '1.0.2'
 end

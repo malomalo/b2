@@ -84,6 +84,7 @@ class B2
     end
     
     def download(bucket, key, to=nil, &block)
+      opened_file = (to && to.is_a?(String))
       to = ::File.open(to, 'wb') if to.is_a?(String)
       digestor = Digest::SHA1.new
       data = ""
@@ -117,7 +118,12 @@ class B2
           end
         end
       end
-    
+      
+      if opened_file
+        to.close
+      elsif to
+        to.flush
+      end
       block.nil? && to.nil? ? data : nil
     end
     
