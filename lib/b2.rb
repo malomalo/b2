@@ -2,6 +2,7 @@ require 'uri'
 require 'json'
 require 'net/http'
 
+require File.expand_path('../b2/errors', __FILE__)
 require File.expand_path('../b2/file', __FILE__)
 require File.expand_path('../b2/bucket', __FILE__)
 require File.expand_path('../b2/connection', __FILE__)
