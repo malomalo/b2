@@ -116,7 +116,16 @@ class B2
           when Net::HTTPNotFound
             raise B2::NotFound.new(JSON.parse(response.body)['message'])
           else
-            raise response.body
+            begin
+              body = JSON.parse(response.body)
+              if body['code'] == 'not_found'
+                raise B2::NotFound(body['message'])
+              else
+                raise "#{body['code']} (#{body['message']})"
+              end
+            rescue
+              raise response.body
+            end
           end
         end
       end
