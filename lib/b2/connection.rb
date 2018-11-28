@@ -1,3 +1,5 @@
+require 'cgi'
+
 class B2
   class Connection
     
@@ -98,13 +100,16 @@ class B2
       @buckets_cache.find{ |b| b.name == name }&.id
     end
 
-    def get_download_url(bucket, filename, expires_in: 3_600)
+    def get_download_url(bucket, filename, expires_in: 3_600, disposition: nil)
       response = post("/b2api/v1/b2_get_download_authorization", {
         bucketId: lookup_bucket_id(bucket),
         fileNamePrefix: filename,
-        validDurationInSeconds: expires_in
+        validDurationInSeconds: expires_in,
+        b2ContentDisposition: disposition
       })
-      @download_url + '/file/' + bucket + '/' + filename + "?Authorization=" + response['authorizationToken']
+      url =  @download_url + '/file/' + bucket + '/' + filename + "?Authorization=" + response['authorizationToken']
+      url += "&b2ContentDisposition=#{CGI.escape(disposition)}" if disposition
+      url
     end
 
     def download(bucket, key, to=nil, &block)
