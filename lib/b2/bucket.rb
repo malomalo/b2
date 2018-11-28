@@ -67,6 +67,10 @@ class B2
       file ? B2::File.new(file.merge({'bucketId' => @id}), @connection) : nil
     end
     
+    def get_download_url(key, **options)
+      @connection.get_download_url(@name, key, **options)
+    end
+
     def download(key, to=nil, &block)
       @connection.download(@name, key, to, &block)
     end

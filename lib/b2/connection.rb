@@ -33,6 +33,7 @@ class B2
       @recommended_part_size = resp['recommendedPartSize']
       @auth_token = resp['authorizationToken']
       @download_url = resp['downloadUrl']
+      @buckets_cache = []
     end
     
     def disconnect!
@@ -82,7 +83,30 @@ class B2
 
       return_value
     end
+
+    def buckets
+      post('/b2api/v1/b2_list_buckets', {accountId: @account_id})['buckets'].map do |b|
+        B2::Bucket.new(b, self)
+      end
+    end
+
+    def lookup_bucket_id(name)
+      bucket = @buckets_cache.find{ |b| b.name == name }
+      return bucket.id if bucket
     
+      @buckets_cache = buckets
+      @buckets_cache.find{ |b| b.name == name }&.id
+    end
+
+    def get_download_url(bucket, filename, expires_in: 3_600)
+      response = post("/b2api/v1/b2_get_download_authorization", {
+        bucketId: lookup_bucket_id(bucket),
+        fileNamePrefix: filename,
+        validDurationInSeconds: expires_in
+      })
+      @download_url + '/file/' + bucket + '/' + filename + "?Authorization=" + response['authorizationToken']
+    end
+
     def download(bucket, key, to=nil, &block)
       opened_file = (to && to.is_a?(String))
       to = ::File.open(to, 'wb') if to.is_a?(String)

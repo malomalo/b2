@@ -13,25 +13,14 @@ class B2
   def initialize(account_id:, application_key:)
     @account_id = account_id
     @connection = B2::Connection.new(account_id, application_key)
-    @buckets_cache = []
   end
   
   def buckets
-    @connection.post('/b2api/v1/b2_list_buckets', {accountId: @account_id})['buckets'].map do |b|
-      B2::Bucket.new(b, @connection)
-    end
-  end
-
-  def lookup_bucket_id(name)
-    bucket = @buckets_cache.find{ |b| b.name == name }
-    return bucket.id if bucket
-    
-    @buckets_cache = buckets
-    @buckets_cache.find{ |b| b.name == name }&.id
+    @connection.buckets
   end
   
   def file(bucket, key)
-    bucket_id = lookup_bucket_id(bucket)
+    bucket_id = @connection.lookup_bucket_id(bucket)
     
     file = @connection.post('/b2api/v1/b2_list_file_names', {
       bucketId: bucket_id,
@@ -55,7 +44,7 @@ class B2
   
   def get_upload_token(bucket)
     @connection.post("/b2api/v1/b2_get_upload_url", {
-      bucketId: lookup_bucket_id(bucket)
+      bucketId: @connection.lookup_bucket_id(bucket)
     })
   end
   
@@ -86,13 +75,8 @@ class B2
     end
   end
   
-  def get_download_url(bucket, filename, expires_in: 3_600)
-    response = @connection.post("/b2api/v1/b2_get_download_authorization", {
-      bucketId: lookup_bucket_id(bucket),
-      fileNamePrefix: filename,
-      validDurationInSeconds: expires_in
-    })
-    @connection.download_url + '/file/' + bucket + '/' + filename + "?Authorization=" + response['authorizationToken']
+  def get_download_url(bucket, filename, **options)
+    @connection.get_download_url(bucket, filename, **options)
   end
   
   def download(bucket, key, to=nil, &block)
