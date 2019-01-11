@@ -60,6 +60,11 @@ class B2
     def active?
       !@connection.nil? && @connection.active?
     end
+    
+    def connection
+      reconnect! if !active?
+      @connection
+    end
 
     def send_request(request, body=nil, &block)
       request['Authorization'] = authorization_token
@@ -67,7 +72,7 @@ class B2
       
       return_value = nil
       close_connection = false
-      @connection.request(request) do |response|
+      connection.request(request) do |response|
         close_connection = response['Connection'] == 'close'
         
         case response
@@ -81,7 +86,7 @@ class B2
           raise "Error connecting to B2 API #{response.body}"
         end
       end
-      @connection.finish if close_connection
+      disconnect! if close_connection
 
       return_value
     end
