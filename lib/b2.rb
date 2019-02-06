@@ -5,6 +5,7 @@ require 'net/http'
 require File.expand_path('../b2/errors', __FILE__)
 require File.expand_path('../b2/file', __FILE__)
 require File.expand_path('../b2/bucket', __FILE__)
+require File.expand_path('../b2/api_connection', __FILE__)
 require File.expand_path('../b2/connection', __FILE__)
 require File.expand_path('../b2/upload_chunker', __FILE__)
 
@@ -22,20 +23,20 @@ class B2
   def file(bucket, key)
     bucket_id = @connection.lookup_bucket_id(bucket)
     
-    file = @connection.post('/b2api/v1/b2_list_file_names', {
+    file = @connection.post('/b2api/v2/b2_list_file_names', {
       bucketId: bucket_id,
       startFileName: key
     })['files'].find {|f| f['fileName'] == key }
 
-    file ? B2::File.new(file.merge({'bucketId' => bucket_id})) : nil
+    file ? B2::File.new(file.merge({'bucketId' => bucket_id}), @connection) : nil
   end
   
   def delete(bucket, key)
     object = file(bucket, key)
     if object
-      @connection.post('/b2api/v1/b2_delete_file_version', {
-        fileName: file.name,
-        fileId: file.id
+      @connection.post('/b2api/v2/b2_delete_file_version', {
+        fileName: object.name,
+        fileId: object.id
       })
     else
       false
@@ -43,7 +44,7 @@ class B2
   end
   
   def get_upload_token(bucket)
-    @connection.post("/b2api/v1/b2_get_upload_url", {
+    @connection.post("/b2api/v2/b2_get_upload_url", {
       bucketId: @connection.lookup_bucket_id(bucket)
     })
   end

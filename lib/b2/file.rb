@@ -26,7 +26,7 @@ class B2
     end
     
     def delete!
-      @connection.post('/b2api/v1/b2_delete_file_version', {
+      @connection.post('/b2api/v2/b2_delete_file_version', {
         fileId: @id,
         fileName: @name
       })

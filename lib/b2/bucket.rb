@@ -14,7 +14,7 @@ class B2
     end
     
     def get_upload_token
-      @connection.post("/b2api/v1/b2_get_upload_url", { bucketId: @id })
+      @connection.post("/b2api/v2/b2_get_upload_url", { bucketId: @id })
     end
     
     def upload_file(key, io_or_string, mime_type: nil, sha1: nil, content_disposition: nil, info: {})
@@ -48,7 +48,7 @@ class B2
     end
     
     def has_key?(key)
-      !@connection.post('/b2api/v1/b2_list_file_names', {
+      !@connection.post('/b2api/v2/b2_list_file_names', {
         bucketId: @id,
         startFileName: key,
         maxFileCount: 1,
@@ -57,7 +57,7 @@ class B2
     end
 
     def file(key)
-      file = @connection.post('/b2api/v1/b2_list_file_names', {
+      file = @connection.post('/b2api/v2/b2_list_file_names', {
         bucketId: @id,
         startFileName: key,
         maxFileCount: 1,
