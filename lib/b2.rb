@@ -20,6 +20,11 @@ class B2
     @connection.buckets
   end
   
+  def bucket(name)
+    bs = @connection.post('/b2api/v2/b2_list_buckets', {accountId: @account_id, bucketName: name})['buckets']
+    B2::Bucket.new(bs.first, self)
+  end
+  
   def file(bucket, key)
     bucket_id = @connection.lookup_bucket_id(bucket)
     
