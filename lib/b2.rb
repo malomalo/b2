@@ -94,7 +94,7 @@ class B2
 
   
   def download_to_file(bucket, key, filename)
-    file = ::File.open(filename, 'w')
+    file = ::File.open(filename, 'wb')
     download(bucket, key) do |chunk|
       file << chunk
     end
