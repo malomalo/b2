@@ -1,11 +1,11 @@
 class B2
   class APIConnection
     
-    attr_reader :account_id, :application_key, :download_url
+    attr_reader :key_id, :key_secret, :download_url
     
-    def initialize(account_id, application_key)
-      @account_id = account_id
-      @application_key = application_key
+    def initialize(key_id, secret)
+      @key_id = key_id
+      @key_secret = secret
     end
     
     def connect!
@@ -13,7 +13,7 @@ class B2
       conn.use_ssl = true
       
       req = Net::HTTP::Get.new('/b2api/v2/b2_authorize_account')
-      req.basic_auth(account_id, application_key)
+      req.basic_auth(@key_id, @key_secret)
 
       key_expiration = Time.now.to_i + 86_400 #24hr expiry
       resp = conn.start { |http| http.request(req) }
@@ -29,11 +29,19 @@ class B2
       @connection.start
 
       @auth_token_expires_at = key_expiration
+      @account_id = resp['accountId']
       @minimum_part_size = resp['absoluteMinimumPartSize']
       @recommended_part_size = resp['recommendedPartSize']
       @auth_token = resp['authorizationToken']
       @download_url = resp['downloadUrl']
       @buckets_cache = []
+    end
+
+    def account_id
+      return @account_id if !@account_id.nil?
+      
+      connect!
+      @account_id
     end
     
     def disconnect!

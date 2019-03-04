@@ -11,9 +11,12 @@ require File.expand_path('../b2/upload_chunker', __FILE__)
 
 class B2
   
-  def initialize(account_id:, application_key:)
-    @account_id = account_id
-    @connection = B2::Connection.new(account_id, application_key)
+  def initialize(key_id: , secret:)
+    @connection = B2::Connection.new(key_id, secret)
+  end
+  
+  def account_id
+    @connection.account_id
   end
   
   def buckets
@@ -21,7 +24,7 @@ class B2
   end
   
   def bucket(name)
-    bs = @connection.post('/b2api/v2/b2_list_buckets', {accountId: @account_id, bucketName: name})['buckets']
+    bs = @connection.post('/b2api/v2/b2_list_buckets', {accountId: account_id, bucketName: name})['buckets']
     B2::Bucket.new(bs.first, self)
   end
   

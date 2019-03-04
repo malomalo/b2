@@ -4,7 +4,7 @@ require 'thread'
 class B2
   class Connection
     
-    def initialize(account_id, application_key, pool: 5, timeout: 5)
+    def initialize(key_id, secret, pool: 5, timeout: 5)
       @mutex        = Mutex.new
       @availability = ConditionVariable.new
       @max          = pool
@@ -12,22 +12,27 @@ class B2
       @free_pool    = []
       @used_pool    = []
       
-      @account_id = account_id
-      @application_key = application_key
-      
+      @key_id = key_id
+      @key_secret = secret
+
       @buckets_cache = []
     end
     
+    def account_id
+      return @account_id if !@account_id.nil?
+      
+      @account_id = with_connection { |conn| conn.account_id }
+    end
 
     def with_connection
       conn = @mutex.synchronize do
         cxn = if !@free_pool.empty?
           @free_pool.shift
         elsif @free_pool.size + @used_pool.size < @max
-          B2::APIConnection.new(@account_id, @application_key)
+          B2::APIConnection.new(@key_id, @key_secret)
         else
           @availability.wait(@mutex, @timeout)
-          @free_pool.shift || B2::APIConnection.new(@account_id, @application_key)
+          @free_pool.shift || B2::APIConnection.new(@key_id, @key_secret)
         end
         
         @used_pool << cxn
@@ -56,7 +61,7 @@ class B2
     end
 
     def buckets
-      post('/b2api/v2/b2_list_buckets', {accountId: @account_id})['buckets'].map do |b|
+      post('/b2api/v2/b2_list_buckets', {accountId: account_id})['buckets'].map do |b|
         B2::Bucket.new(b, self)
       end
     end
