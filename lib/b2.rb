@@ -11,7 +11,7 @@ require File.expand_path('../b2/upload_chunker', __FILE__)
 
 class B2
   
-  def initialize(key_id: , secret:)
+  def initialize(key_id: , secret: )
     @connection = B2::Connection.new(key_id, secret)
   end
   
@@ -25,7 +25,7 @@ class B2
   
   def bucket(name)
     bs = @connection.post('/b2api/v2/b2_list_buckets', {accountId: account_id, bucketName: name})['buckets']
-    B2::Bucket.new(bs.first, self)
+    B2::Bucket.new(bs.first, @connection)
   end
   
   def file(bucket, key)
