@@ -46,6 +46,16 @@ class B2
       
       B2::File.new(result, @connection)
     end
+  
+    def keys(prefix: nil, delimiter: nil)
+      #TODO: add abilty to get all names
+      @connection.post('/b2api/v2/b2_list_file_names', {
+        bucketId: @id,
+        maxFileCount: 1000,
+        prefix: prefix,
+        delimiter: delimiter
+      })['files'].map{ |f| f['fileName'] }
+    end
     
     def has_key?(key)
       !@connection.post('/b2api/v2/b2_list_file_names', {
