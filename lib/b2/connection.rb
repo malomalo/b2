@@ -86,7 +86,7 @@ class B2
       url
     end
 
-    def download(bucket, key, to=nil, &block)
+    def download(bucket, key, to=nil)
       opened_file = (to && to.is_a?(String))
       to = ::File.open(to, 'wb') if to.is_a?(String)
       digestor = Digest::SHA1.new
@@ -106,8 +106,8 @@ class B2
               digestor << chunk
               if to
                 to << chunk
-              elsif block
-                block(chunk)
+              elsif block_given?
+                yield(chunk)
               else
                 data << chunk
               end
@@ -138,7 +138,7 @@ class B2
       elsif to
         to.flush
       end
-      block.nil? && to.nil? ? data : nil
+      !block_given? && to.nil? ? data : nil
     end
     
     def get(path, body=nil, &block)
