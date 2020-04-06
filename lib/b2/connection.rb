@@ -113,8 +113,8 @@ class B2
               end
             end
       
-            if digestor.hexdigest != response['X-Bz-Content-Sha1']
-              raise 'file error'
+            if response['X-Bz-Content-Sha1'] != 'none' && digestor.hexdigest != response['X-Bz-Content-Sha1']
+              rase B2::FileIntegrityError.new("SHA1 Mismatch, expected: \"#{response['X-Bz-Content-Sha1']}\", actual: \"#{digestor.hexdigest}\"")
             end
           when Net::HTTPNotFound
             raise B2::NotFound.new(JSON.parse(response.body)['message'])

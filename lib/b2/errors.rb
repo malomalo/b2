@@ -6,4 +6,7 @@ class B2
   class NotFound < Error
   end
 
+  class FileIntegrityError < Error
+  end
+
 end
