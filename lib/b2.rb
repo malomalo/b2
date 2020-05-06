@@ -11,6 +11,14 @@ require File.expand_path('../b2/upload_chunker', __FILE__)
 
 class B2
   
+  def self.encode(value)
+    URI.encode_www_form_component(value.force_encoding(Encoding::UTF_8)).gsub("%2F", "/")
+  end
+  
+  def self.decode(value)
+    URI.decode_www_form_component(value, Encoding::UTF_8)
+  end
+  
   def initialize(key_id: , secret: )
     @connection = B2::Connection.new(key_id, secret)
   end
@@ -67,7 +75,7 @@ class B2
     chunker = B2::UploadChunker.new(io_or_string)
     req = Net::HTTP::Post.new(uri.path)
     req['Authorization']      = upload['authorizationToken']
-    req['X-Bz-File-Name']     = B2::File.encode_filename(key)
+    req['X-Bz-File-Name']     = B2.encode(key)
     req['Content-Type']       = mime_type || 'b2/x-auto'
     req['X-Bz-Content-Sha1']  = 'hex_digits_at_end'
     info.each do |key, value|

@@ -5,7 +5,7 @@ class B2
     
     def initialize(attrs, connection)
       @id = attrs['fileId']
-      @name = B2::File.decode_filename(attrs['fileName'])
+      @name = B2.decode(attrs['fileName'])
       @account_id = attrs['accountId']
       @bucket_id = attrs['bucketId']
       @size = attrs['contentLength']
@@ -15,14 +15,6 @@ class B2
       @metadata = attrs['fileInfo']
       
       @connection = connection
-    end
-    
-    def self.encode_filename(str)
-      URI.encode_www_form_component(str.force_encoding(Encoding::UTF_8)).gsub("%2F", "/")
-    end
-    
-    def self.decode_filename(str)
-      URI.decode_www_form_component(str, Encoding::UTF_8)
     end
     
     def delete!
