@@ -34,7 +34,6 @@ class B2
       @recommended_part_size = resp['recommendedPartSize']
       @auth_token = resp['authorizationToken']
       @download_url = resp['downloadUrl']
-      @buckets_cache = []
     end
 
     def account_id

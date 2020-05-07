@@ -15,7 +15,7 @@ class B2
       @key_id = key_id
       @key_secret = secret
 
-      @buckets_cache = []
+      @buckets_cache = Hash.new { |hash, name| hash[name] = bucket(name) }
     end
     
     def account_id
@@ -65,13 +65,17 @@ class B2
         B2::Bucket.new(b, self)
       end
     end
+    
+    def bucket(name)
+      response = post('/b2api/v2/b2_list_buckets', {
+        accountId: account_id,
+        bucketName: name
+      })['buckets']
+      response.map { |b| B2::Bucket.new(b, self) }.first
+    end
 
     def lookup_bucket_id(name)
-      bucket = @buckets_cache.find{ |b| b.name == name }
-      return bucket.id if bucket
-      
-      @buckets_cache = buckets
-      @buckets_cache.find{ |b| b.name == name }&.id
+      @buckets_cache[name].id
     end
 
     def get_download_url(bucket, filename, expires_in: 3_600, disposition: nil)
