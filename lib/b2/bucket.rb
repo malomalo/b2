@@ -41,7 +41,7 @@ class B2
       result = if resp.is_a?(Net::HTTPSuccess)
         JSON.parse(resp.body)
       else
-        raise "Error connecting to B2 API"
+        raise "Error connecting to B2 API #{resp.body}"
       end
       
       B2::File.new(result, @connection)

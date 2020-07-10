@@ -72,24 +72,40 @@ class B2
     end
 
     def send_request(request, body=nil, &block)
+      retries = 0
       request['Authorization'] = authorization_token
       request.body = (body.is_a?(String) ? body : JSON.generate(body)) if body
       
       return_value = nil
       close_connection = false
-      connection.request(request) do |response|
-        close_connection = response['Connection'] == 'close'
-        
-        case response
-        when Net::HTTPSuccess
-          if block_given?
-            return_value = yield(response)
+      begin
+        connection.request(request) do |response|
+          close_connection = response['Connection'] == 'close'
+          
+          case response
+          when Net::HTTPSuccess
+            if block_given?
+              return_value = yield(response)
+            else
+              return_value = JSON.parse(response.body)
+            end
           else
-            return_value = JSON.parse(response.body)
+            body = JSON.parse(response.body)
+            case body['code']
+            when 'not_found'
+              raise B2::NotFound(body['message'])
+            when 'expired_auth_token'
+              raise B2::ExpiredAuthToken(body['message'])
+            else
+              raise "Error connecting to B2 API #{response.body}"
+            end
           end
-        else
-          raise "Error connecting to B2 API #{response.body}"
         end
+        
+      rescue B2::ExpiredAuthToken
+        reconnect!
+        retries =+ 1
+        retry if retries < 2
       end
       disconnect! if close_connection
 

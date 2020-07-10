@@ -8,5 +8,8 @@ class B2
 
   class FileIntegrityError < Error
   end
+  
+  class ExpiredAuthToken < Error
+  end
 
 end
