@@ -102,7 +102,9 @@ class B2
           end
         end
         
-      rescue B2::ExpiredAuthToken
+      # Unexpected EOF (end of file) errors can occur when streaming from a
+      # remote because of Backblaze quota restrictions.
+      rescue B2::ExpiredAuthToken, EOFError
         reconnect!
         retries =+ 1
         retry if retries < 2
