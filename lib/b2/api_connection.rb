@@ -93,9 +93,9 @@ class B2
             body = JSON.parse(response.body)
             case body['code']
             when 'not_found'
-              raise B2::NotFound(body['message'])
+              raise B2::NotFound.new(body['message'])
             when 'expired_auth_token'
-              raise B2::ExpiredAuthToken(body['message'])
+              raise B2::ExpiredAuthToken.new(body['message'])
             else
               raise "Error connecting to B2 API #{response.body}"
             end

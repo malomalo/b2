@@ -126,7 +126,7 @@ class B2
             begin
               body = JSON.parse(response.body)
               if body['code'] == 'not_found'
-                raise B2::NotFound(body['message'])
+                raise B2::NotFound.new(body['message'])
               else
                 raise "#{body['code']} (#{body['message']})"
               end
