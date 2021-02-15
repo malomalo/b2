@@ -97,7 +97,7 @@ class B2
             when 'expired_auth_token'
               raise B2::ExpiredAuthToken.new(body['message'])
             else
-              raise "Error connecting to B2 API #{response.body}"
+              raise "Error connecting to B2 API: #{response.body}"
             end
           end
         end

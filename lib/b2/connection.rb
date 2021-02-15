@@ -52,6 +52,13 @@ class B2
       with_connection { |conn| conn.authorization_token }
     end
     
+    def authorization_token!
+      with_connection { |conn|
+        conn.reconnect!
+        conn.authorization_token
+      }
+    end
+    
     def send_request(request, body=nil, &block)
       with_connection { |conn| conn.send_request(request, body, &block) }
     end
@@ -91,6 +98,7 @@ class B2
     end
 
     def download(bucket, key, to=nil)
+      retries = 0
       opened_file = (to && to.is_a?(String))
       to = ::File.open(to, 'wb') if to.is_a?(String)
       digestor = Digest::SHA1.new
@@ -103,38 +111,52 @@ class B2
       req = Net::HTTP::Get.new("/file/#{bucket}/#{key}")
       req['Authorization'] = authorization_token
       conn.start do |http|
-        http.request(req) do |response|
-          case response
-          when Net::HTTPSuccess
-            response.read_body do |chunk|
-              digestor << chunk
-              if to
-                to << chunk
-              elsif block_given?
-                yield(chunk)
-              else
-                data << chunk
+        begin
+          http.request(req) do |response|
+            case response
+            when Net::HTTPSuccess
+              response.read_body do |chunk|
+                digestor << chunk
+                if to
+                  to << chunk
+                elsif block_given?
+                  yield(chunk)
+                else
+                  data << chunk
+                end
               end
-            end
       
-            if response['X-Bz-Content-Sha1'] != 'none' && digestor.hexdigest != response['X-Bz-Content-Sha1']
-              raise B2::FileIntegrityError.new("SHA1 Mismatch, expected: \"#{response['X-Bz-Content-Sha1']}\", actual: \"#{digestor.hexdigest}\"")
-            end
-          when Net::HTTPNotFound
-            raise B2::NotFound.new(JSON.parse(response.body)['message'])
-          else
-            begin
-              body = JSON.parse(response.body)
-              if body['code'] == 'not_found'
-                raise B2::NotFound.new(body['message'])
-              else
-                raise "#{body['code']} (#{body['message']})"
+              if response['X-Bz-Content-Sha1'] != 'none' && digestor.hexdigest != response['X-Bz-Content-Sha1']
+                raise B2::FileIntegrityError.new("SHA1 Mismatch, expected: \"#{response['X-Bz-Content-Sha1']}\", actual: \"#{digestor.hexdigest}\"")
               end
-            rescue
-              raise response.body
+            when Net::HTTPNotFound
+              raise B2::NotFound.new(JSON.parse(response.body)['message'])
+            else
+              begin
+                body = JSON.parse(response.body)
+                case body['code']
+                when 'not_found'
+                  raise B2::NotFound.new(body['message'])
+                when 'expired_auth_token'
+                  raise B2::ExpiredAuthToken.new(body['message'])
+                else
+                  raise "Error connecting to B2 API: #{response.body}"
+                end
+              rescue
+                raise response.body
+              end
             end
           end
+        # Unexpected EOF (end of file) errors can occur when streaming from a
+        # remote because of Backblaze quota restrictions.
+        rescue B2::ExpiredAuthToken, EOFError
+          retries =+ 1
+          if retries < 2
+            req['Authorization'] = authorization_token!
+            retry
+          end
         end
+
       end
       
       if opened_file
