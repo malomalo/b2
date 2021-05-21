@@ -10,6 +10,12 @@ class B2
     
     def connect!
       conn = Net::HTTP.new('api.backblazeb2.com', 443)
+      conn.max_retries         = 0
+      conn.open_timeout        = 5
+      conn.read_timeout        = 5
+      conn.write_timeout       = 5
+      conn.ssl_timeout         = 5
+      conn.keep_alive_timeout  = 30
       conn.use_ssl = true
       
       req = Net::HTTP::Get.new('/b2api/v2/b2_authorize_account')
@@ -104,7 +110,7 @@ class B2
         
       # Unexpected EOF (end of file) errors can occur when streaming from a
       # remote because of Backblaze quota restrictions.
-      rescue B2::ExpiredAuthToken, EOFError
+      rescue B2::ExpiredAuthToken, EOFError, Net::OpenTimeout
         reconnect!
         retries =+ 1
         retry if retries < 2
