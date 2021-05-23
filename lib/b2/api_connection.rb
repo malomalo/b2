@@ -9,37 +9,50 @@ class B2
     end
     
     def connect!
-      conn = Net::HTTP.new('api.backblazeb2.com', 443)
-      conn.max_retries         = 0
-      conn.open_timeout        = 5
-      conn.read_timeout        = 5
-      conn.write_timeout       = 5
-      conn.ssl_timeout         = 5
-      conn.keep_alive_timeout  = 30
-      conn.use_ssl = true
+      retries = 0
       
-      req = Net::HTTP::Get.new('/b2api/v2/b2_authorize_account')
-      req.basic_auth(@key_id, @key_secret)
+      begin
+        conn = Net::HTTP.new('api.backblazeb2.com', 443)
+        conn.max_retries         = 0
+        conn.open_timeout        = 5
+        conn.read_timeout        = 5
+        conn.write_timeout       = 5
+        conn.ssl_timeout         = 5
+        conn.keep_alive_timeout  = 30
+        conn.use_ssl = true
+      
+        req = Net::HTTP::Get.new('/b2api/v2/b2_authorize_account')
+        req.basic_auth(@key_id, @key_secret)
 
-      key_expiration = Time.now.to_i + 86_400 #24hr expiry
-      resp = conn.start { |http| http.request(req) }
-      if resp.is_a?(Net::HTTPSuccess)
-        resp = JSON.parse(resp.body)
-      else
-        raise "Error connecting to B2 API"
+        key_expiration = Time.now.to_i + 86_400 #24hr expiry
+        resp = conn.start { |http| http.request(req) }
+        if resp.is_a?(Net::HTTPSuccess)
+          resp = JSON.parse(resp.body)
+        else
+          raise "Error connecting to B2 API"
+        end
+
+        uri = URI.parse(resp['apiUrl'])
+        @connection = Net::HTTP.new(uri.host, uri.port)
+        @connection.max_retries         = 0
+        @connection.open_timeout        = 5
+        @connection.read_timeout        = 5
+        @connection.write_timeout       = 5
+        @connection.ssl_timeout         = 5
+        @connection.keep_alive_timeout  = 30
+        @connection.use_ssl = uri.scheme == 'https'
+        @connection.start
+
+        @auth_token_expires_at = key_expiration
+        @account_id = resp['accountId']
+        @minimum_part_size = resp['absoluteMinimumPartSize']
+        @recommended_part_size = resp['recommendedPartSize']
+        @auth_token = resp['authorizationToken']
+        @download_url = resp['downloadUrl']
+      rescue Net::OpenTimeout
+        retries =+ 1
+        retry if retries < 2
       end
-
-      uri = URI.parse(resp['apiUrl'])
-      @connection = Net::HTTP.new(uri.host, uri.port)
-      @connection.use_ssl = uri.scheme == 'https'
-      @connection.start
-
-      @auth_token_expires_at = key_expiration
-      @account_id = resp['accountId']
-      @minimum_part_size = resp['absoluteMinimumPartSize']
-      @recommended_part_size = resp['recommendedPartSize']
-      @auth_token = resp['authorizationToken']
-      @download_url = resp['downloadUrl']
     end
 
     def account_id
