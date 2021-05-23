@@ -106,6 +106,12 @@ class B2
     
       uri = URI.parse(download_url)
       conn = Net::HTTP.new(uri.host, uri.port)
+      conn.max_retries         = 0
+      conn.open_timeout        = 5
+      conn.read_timeout        = 5
+      conn.write_timeout       = 5
+      conn.ssl_timeout         = 5
+      conn.keep_alive_timeout  = 30
       conn.use_ssl = uri.scheme == 'https'
 
       req = Net::HTTP::Get.new("/file/#{bucket}/#{key}")
@@ -149,7 +155,7 @@ class B2
           end
         # Unexpected EOF (end of file) errors can occur when streaming from a
         # remote because of Backblaze quota restrictions.
-        rescue B2::ExpiredAuthToken, EOFError
+        rescue B2::ExpiredAuthToken, EOFError, Net::OpenTimeout, OpenSSL::SSL::SSLError
           retries =+ 1
           if retries < 2
             req['Authorization'] = authorization_token!
