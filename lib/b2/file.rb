@@ -3,10 +3,11 @@ class B2
 
     attr_reader :id, :name, :account_id, :bucket_id, :size, :sha1, :mime_type, :uploaded_at, :metadata
     
-    def initialize(attrs, connection)
+    def initialize(attrs, connection, bucket: nil)
       @id = attrs['fileId']
       @name = B2.decode(attrs['fileName'])
       @account_id = attrs['accountId']
+      @bucket = bucket
       @bucket_id = attrs['bucketId']
       @size = attrs['contentLength']
       @sha1 = attrs['contentSha1']
@@ -23,6 +24,10 @@ class B2
         fileName: @name
       })
     end
-
+    
+    def read(to=nil, &block)
+      @connection.download(@bucket.name, @name, to, &block)
+    end
+    
   end
 end

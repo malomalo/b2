@@ -47,14 +47,42 @@ class B2
       B2::File.new(result, @connection)
     end
   
-    def keys(prefix: nil, delimiter: nil)
-      #TODO: add abilty to get all names
-      @connection.post('/b2api/v2/b2_list_file_names', {
+    def each_file(prefix: nil, delimiter: nil)
+      response = @connection.post('/b2api/v2/b2_list_file_names', {
         bucketId: @id,
         maxFileCount: 1000,
         prefix: prefix,
         delimiter: delimiter
-      })['files'].map{ |f| f['fileName'] }
+      })
+      
+      response['files'].each do |f|
+        yield(B2::File.new(f, @connection, bucket: self))
+      end
+
+      start_filename = response['nextFileName']
+      while start_filename
+        response = @connection.post('/b2api/v2/b2_list_file_names', {
+          bucketId: @id,
+          maxFileCount: 1000,
+          prefix: prefix,
+          delimiter: delimiter,
+          startFileName: start_filename
+        })
+        
+        response['files'].each do |f|
+          yield(B2::File.new(f, @connection, bucket: self))
+        end
+        
+        start_filename = response['nextFileName']
+      end
+    end
+    
+    def keys(prefix: nil, delimiter: nil)
+      keys = []
+      each_file(prefix: prefix, delimiter: delimiter) do |file|
+        keys << file.name
+      end
+      keys
     end
     
     def has_key?(key)
