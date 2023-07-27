@@ -65,24 +65,32 @@ class B2
     })
   end
   
-  def upload_file(bucket, key, io_or_string, mime_type: nil, info: {})
+  def upload(bucket, key, io_or_string, mime_type: nil, sha1: nil, content_disposition: nil, info: {})
     upload = get_upload_token(bucket)
   
     uri = URI.parse(upload['uploadUrl'])
     conn = Net::HTTP.new(uri.host, uri.port)
     conn.use_ssl = uri.scheme == 'https'
 
-    chunker = B2::UploadChunker.new(io_or_string)
+    chunker = sha1 ? io_or_string : B2::UploadChunker.new(io_or_string)
+
     req = Net::HTTP::Post.new(uri.path)
     req['Authorization']      = upload['authorizationToken']
     req['X-Bz-File-Name']     = B2.encode(key)
     req['Content-Type']       = mime_type || 'b2/x-auto'
-    req['X-Bz-Content-Sha1']  = 'hex_digits_at_end'
+    req['X-Bz-Content-Sha1']  = sha1 ? sha1 : 'hex_digits_at_end'
+    req['X-Bz-Info-b2-content-disposition'] = B2.encode(content_disposition) if content_disposition
     info.each do |key, value|
       req["X-Bz-Info-#{key}"] = value
     end
-    req['Content-Length']     = chunker.size
-    req.body_stream           = chunker
+    
+    if chunker.is_a?(String)
+      req['Content-Length'] = chunker.bytesize
+      req.body = chunker
+    else
+      req['Content-Length'] = chunker.size
+      req.body_stream = chunker
+    end
 
     resp = conn.start { |http| http.request(req) }
     if resp.is_a?(Net::HTTPSuccess)

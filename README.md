@@ -6,7 +6,7 @@ A Backblaze B2 Client
 ```ruby
 b2 = B2.new(account_id: B2_ACCOUNT_ID, application_key: B2_APPLICATION_KEY)
 
-b2.upload_file('bucket_name', 'key', io_or_string)
+b2.upload('bucket_name', 'key', io_or_string)
 
 b2.download('bucket_name', 'key') # => binary_string
 

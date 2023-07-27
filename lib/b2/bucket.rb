@@ -17,14 +17,15 @@ class B2
       @connection.post("/b2api/v2/b2_get_upload_url", { bucketId: @id })
     end
     
-    def upload_file(key, io_or_string, mime_type: nil, sha1: nil, content_disposition: nil, info: {})
+    def upload(key, io_or_string, mime_type: nil, sha1: nil, content_disposition: nil, info: {})
       upload = get_upload_token
-  
+
       uri = URI.parse(upload['uploadUrl'])
       conn = Net::HTTP.new(uri.host, uri.port)
       conn.use_ssl = uri.scheme == 'https'
 
       chunker = sha1 ? io_or_string : B2::UploadChunker.new(io_or_string)
+
       req = Net::HTTP::Post.new(uri.path)
       req['Authorization']      = upload['authorizationToken']
       req['X-Bz-File-Name']     = B2.encode(key)
@@ -34,8 +35,14 @@ class B2
       info.each do |key, value|
         req["X-Bz-Info-#{key}"] = B2.encode(value)
       end
-      req['Content-Length']     = chunker.size
-      req.body_stream           = chunker
+      
+      if chunker.is_a?(String)
+        req['Content-Length'] = chunker.bytesize
+        req.body = chunker
+      else
+        req['Content-Length'] = chunker.size
+        req.body_stream = chunker
+      end
 
       resp = conn.start { |http| http.request(req) }
       result = if resp.is_a?(Net::HTTPSuccess)
